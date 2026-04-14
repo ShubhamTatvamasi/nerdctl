@@ -14,3 +14,14 @@ Verify
 ```bash
 nerdctl --version
 ```
+
+
+---
+
+
+### CentOS 9
+
+Install `gzip`:
+```bash
+sudo dnf install -y gzip --disableexcludes=all
+```
