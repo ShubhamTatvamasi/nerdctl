@@ -2,12 +2,12 @@
 
 Download latest `nerdctl` release
 ```bash
-curl -LO https://github.com/containerd/nerdctl/releases/latest/download/nerdctl-full-$(uname -s)-$(uname -m).tar.gz
+wget https://github.com/containerd/nerdctl/releases/download/v2.2.2/nerdctl-2.2.2-linux-amd64.tar.gz
 ```
 
 Extract to /usr/local
 ```bash
-sudo tar -C /usr/local -xzf nerdctl-full-*.tar.gz
+sudo tar -C /usr/local -xzf nerdctl-2.2.2-linux-amd64.tar.gz
 ```
 
 Verify
