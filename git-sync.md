@@ -9,6 +9,6 @@ nerdctl run --rm -it \
 
 Warm up network before `git clone`:
 ```bash
-curl -m 1 https://github.com || true \
+curl -m 1 https://github.com || true && \
   git clone https://github.com/ShubhamTatvamasi/fluxcd.git
 ```
