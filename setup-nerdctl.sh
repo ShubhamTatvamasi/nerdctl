@@ -8,8 +8,9 @@ SOCKET="/run/k3s/containerd/containerd.sock"
 GROUP="containerd"
 SERVICE="rke2-server"
 USER_NAME="${SUDO_USER:-$USER}"
+USER_HOME=$(eval echo "~$USER_NAME")
 
-echo "👉 Starting full nerdctl + RKE2 setup..."
+echo "👉 Starting nerdctl + RKE2 setup..."
 
 # -------------------------------
 # 1. Fetch latest nerdctl version
@@ -29,67 +30,55 @@ VERSION_NO_V="${LATEST_VERSION#v}"
 TARBALL="nerdctl-full-${VERSION_NO_V}-linux-${ARCH}.tar.gz"
 
 # -------------------------------
-# 2. Download nerdctl-full
+# 2. Download & install nerdctl
 # -------------------------------
 mkdir -p "$TMP_DIR"
 cd "$TMP_DIR"
 
 echo "👉 Downloading $TARBALL..."
-
 curl -LO "https://github.com/containerd/nerdctl/releases/download/${LATEST_VERSION}/${TARBALL}"
 
-# -------------------------------
-# 3. Install nerdctl
-# -------------------------------
 echo "👉 Extracting to /usr/local..."
-
 sudo tar -C /usr/local -xzf "$TARBALL"
-
-if ! command -v nerdctl >/dev/null; then
-  echo "❌ nerdctl installation failed"
-  exit 1
-fi
 
 echo "✅ nerdctl installed: $(nerdctl --version)"
 
 # -------------------------------
-# 4. Verify RKE2 socket
+# 3. Verify RKE2 socket
 # -------------------------------
 if [ ! -S "$SOCKET" ]; then
-  echo "❌ ERROR: Containerd socket not found at $SOCKET"
-  echo "👉 Make sure RKE2 is running: sudo systemctl status $SERVICE"
+  echo "❌ ERROR: Socket not found: $SOCKET"
+  echo "👉 Ensure RKE2 is running: sudo systemctl status $SERVICE"
   exit 1
 fi
 
-echo "✅ Found containerd socket: $SOCKET"
+echo "✅ Found containerd socket"
 
 # -------------------------------
-# 5. Create group if needed
+# 4. Create group if needed
 # -------------------------------
 if ! getent group "$GROUP" >/dev/null; then
   echo "👉 Creating group: $GROUP"
   sudo groupadd "$GROUP"
-else
-  echo "✅ Group $GROUP already exists"
 fi
 
 # -------------------------------
-# 6. Add user to group
+# 5. Add user to group
 # -------------------------------
 echo "👉 Adding user '$USER_NAME' to group '$GROUP'"
 sudo usermod -aG "$GROUP" "$USER_NAME"
 
 # -------------------------------
-# 7. Fix socket permissions
+# 6. Fix socket permissions
 # -------------------------------
 echo "👉 Setting socket permissions"
 sudo chgrp "$GROUP" "$SOCKET"
 sudo chmod 660 "$SOCKET"
 
 # -------------------------------
-# 8. Persist permissions via systemd
+# 7. Persist permissions (systemd)
 # -------------------------------
-echo "👉 Creating systemd override..."
+echo "👉 Creating systemd override"
 
 OVERRIDE_DIR="/etc/systemd/system/${SERVICE}.service.d"
 OVERRIDE_FILE="${OVERRIDE_DIR}/override.conf"
@@ -103,36 +92,34 @@ ExecStartPost=/bin/chmod 660 $SOCKET
 EOF
 
 # -------------------------------
-# 9. Reload + restart RKE2
+# 8. Reload + restart RKE2
 # -------------------------------
 echo "👉 Restarting $SERVICE..."
-
 sudo systemctl daemon-reexec
 sudo systemctl daemon-reload
 sudo systemctl restart "$SERVICE"
 
 # -------------------------------
-# 10. Set environment variable
+# 9. Configure nerdctl (no flags needed)
 # -------------------------------
-BASHRC="/home/$USER_NAME/.bashrc"
+echo "👉 Configuring nerdctl (rootful + k8s namespace)"
 
-if ! grep -q "CONTAINERD_ADDRESS" "$BASHRC"; then
-  echo "👉 Adding CONTAINERD_ADDRESS to $BASHRC"
-  echo "export CONTAINERD_ADDRESS=$SOCKET" >> "$BASHRC"
-else
-  echo "✅ CONTAINERD_ADDRESS already set"
-fi
+CONFIG_DIR="$USER_HOME/.config/nerdctl"
+CONFIG_FILE="$CONFIG_DIR/nerdctl.toml"
+
+mkdir -p "$CONFIG_DIR"
+
+cat > "$CONFIG_FILE" <<EOF
+address = "$SOCKET"
+namespace = "k8s.io"
+EOF
+
+chown -R "$USER_NAME":"$USER_NAME" "$USER_HOME/.config"
+
+echo "✅ nerdctl config written to $CONFIG_FILE"
 
 # -------------------------------
-# 11. Add alias
-# -------------------------------
-if ! grep -q 'alias nerdctl=' "$BASHRC"; then
-  echo "👉 Adding nerdctl alias"
-  echo 'alias nerdctl="nerdctl --address=$CONTAINERD_ADDRESS"' >> "$BASHRC"
-fi
-
-# -------------------------------
-# 12. Cleanup
+# 10. Cleanup
 # -------------------------------
 rm -rf "$TMP_DIR"
 
@@ -143,9 +130,11 @@ echo ""
 echo "🎉 Setup completed successfully!"
 echo ""
 echo "👉 IMPORTANT:"
-echo "Run one of the following to apply group changes:"
+echo "Run:"
 echo "   newgrp $GROUP"
 echo "   OR logout/login"
 echo ""
-echo "👉 Then test:"
+echo "👉 Then simply run:"
 echo "   nerdctl ps"
+echo ""
+echo "💡 No sudo. No flags. Clean setup."
