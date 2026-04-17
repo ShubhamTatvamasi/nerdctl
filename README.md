@@ -16,7 +16,7 @@ wget https://github.com/containerd/nerdctl/releases/download/v2.2.2/nerdctl-2.2.
 
 Extract to /usr/local
 ```bash
-sudo tar -C /usr/local -xzf nerdctl-2.2.2-linux-amd64.tar.gz
+sudo tar -C /usr/local/bin -xzf nerdctl-2.2.2-linux-amd64.tar.gz
 ```
 
 Verify
