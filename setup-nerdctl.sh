@@ -32,7 +32,7 @@ fi
 echo "✅ Latest: $LATEST_VERSION"
 
 VERSION_NO_V="${LATEST_VERSION#v}"
-TARBALL="nerdctl-full-${VERSION_NO_V}-linux-${ARCH}.tar.gz"
+TARBALL="nerdctl-${VERSION_NO_V}-linux-${ARCH}.tar.gz"
 
 # -------------------------------
 # 2. Download & install nerdctl
@@ -44,7 +44,7 @@ echo "👉 Downloading nerdctl..."
 curl -LO "https://github.com/containerd/nerdctl/releases/download/${LATEST_VERSION}/${TARBALL}"
 
 echo "👉 Installing nerdctl..."
-sudo tar -C /usr/local -xzf "$TARBALL"
+sudo tar -C /usr/local/bin -xzf "$TARBALL"
 
 # -------------------------------
 # 3. Verify RKE2 socket
