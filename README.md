@@ -27,6 +27,15 @@ nerdctl --version
 
 ---
 
+Test running a container:
+```bash
+nerdctl run \
+  --rm -it \
+  --entrypoint bash \
+  apache/airflow:3.2.0
+```
+
+---
 
 ### CentOS 9
 
